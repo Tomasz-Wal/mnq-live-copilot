@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: mnq-live-copilot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: WEBHOOK_TOKEN
+        sync: false
+      - key: REPORT_KEY
+        sync: false
+      - key: LIVE_MODEL
+        value: gpt-5.6-luna
+      - key: LIVE_REASONING
+        value: low
+      - key: HISTORY_BARS
+        value: "18"
+      - key: REACTION_HISTORY
+        value: "6"
