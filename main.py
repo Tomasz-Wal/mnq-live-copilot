@@ -273,10 +273,16 @@ def analyse_live(snapshot_id: int) -> None:
         history = session_snapshots(snapshot_id, HISTORY_BARS)
         reactions = session_reactions(snapshot_id, REACTION_HISTORY)
         current = history[-1]
+        current_for_ai = dict(current)
+
+        if current.get("time_uk"):
+            dt_utc = datetime.fromisoformat(current["time_uk"].replace("Z", "+00:00"))
+            dt_uk = dt_utc.astimezone(UK_TZ)
+            current_for_ai["time_uk"] = dt_uk.strftime("%Y-%m-%d %H:%M UK")
 
         prompt = (
             "BIEŻĄCY SNAPSHOT:\n"
-            + json.dumps(current, ensure_ascii=False, indent=2)
+            + json.dumps(current_for_ai, ensure_ascii=False, indent=2)
             + "\n\nHISTORIA TEJ SAMEJ SESJI 5M (najstarsza -> najnowsza):\n"
             + json.dumps(history, ensure_ascii=False, indent=2)
             + "\n\nOSTATNIE REAKCJE Z TEJ SAMEJ SESJI:\n"
