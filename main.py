@@ -354,7 +354,7 @@ async def tradingview_webhook(token: str, request: Request, background_tasks: Ba
     return {"accepted": True, "snapshot_id": snapshot_id, "new": is_new}
 
 
-@app.get("/latest/{key}")
+@app.get("/latest/{key:path}")
 def latest_json(key: str) -> dict[str, Any]:
     if not secrets.compare_digest(key, REPORT_KEY):
         raise HTTPException(status_code=403, detail="Invalid report key")
@@ -363,13 +363,13 @@ def latest_json(key: str) -> dict[str, Any]:
     return json.loads(LATEST_REACTION.read_text(encoding="utf-8"))
 
 
-@app.get("/reaction/{key}", response_class=PlainTextResponse)
+@app.get("/reaction/{key:path}", response_class=PlainTextResponse)
 def latest_reaction(key: str) -> str:
     data = latest_json(key)
     return data.get("reaction") or data.get("error", "No reaction")
 
 
-@app.get("/feed/{key}")
+@app.get("/feed/{key:path}")
 def feed(key: str, limit: int = 40) -> dict[str, Any]:
     if not secrets.compare_digest(key, REPORT_KEY):
         raise HTTPException(status_code=403, detail="Invalid report key")
@@ -386,14 +386,14 @@ def feed(key: str, limit: int = 40) -> dict[str, Any]:
     return {"items": [dict(r) for r in reversed(rows)]}
 
 
-@app.get("/report/{key}", response_class=PlainTextResponse)
+@app.get("/report/{key:path}", response_class=PlainTextResponse)
 def report(key: str) -> str:
     if not secrets.compare_digest(key, REPORT_KEY):
         raise HTTPException(status_code=403, detail="Invalid report key")
     return build_report()
 
 
-@app.get("/dashboard/{key}", response_class=HTMLResponse)
+@app.get("/dashboard/{key:path}", response_class=HTMLResponse)
 def dashboard(key: str) -> str:
     if not secrets.compare_digest(key, REPORT_KEY):
         raise HTTPException(status_code=403, detail="Invalid report key")
