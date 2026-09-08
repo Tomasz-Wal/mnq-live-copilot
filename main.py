@@ -430,11 +430,13 @@ def dashboard(key: str) -> str:
     html = """
 <!doctype html>
 <html lang="pl">
+
 <head>
+
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
-<title>MNQ Ai Live Update by Tomasz</title>
+<title>MNQ Live Copilot</title>
 
 <style>
 
@@ -450,12 +452,16 @@ body {
 }
 
 .app {
-    max-width: 980px;
+    max-width: 1100px;
     margin: auto;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
+
+/* ============================= */
+/* HEADER */
+/* ============================= */
 
 .header {
     position: sticky;
@@ -463,7 +469,8 @@ body {
     z-index: 10;
 
     padding: 18px 22px;
-    background: rgba(8,11,15,.94);
+
+    background: rgba(8,11,15,.96);
     backdrop-filter: blur(12px);
 
     border-bottom: 1px solid #202832;
@@ -472,8 +479,11 @@ body {
 .header-top {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 20px;
+}
+
+.title-area {
+    min-width: 260px;
 }
 
 .title {
@@ -487,47 +497,137 @@ body {
     font-size: 13px;
 }
 
+/* ============================= */
+/* ACCOUNT */
+/* ============================= */
+
+.account-box {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 8px 12px;
+
+    border: 1px solid #26303a;
+    border-radius: 12px;
+
+    background: #11171d;
+}
+
+.account-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    min-width: 100px;
+}
+
+.account-label {
+    font-size: 10px;
+    color: #7f8b97;
+    font-weight: 700;
+}
+
+.account-value {
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.pnl-positive {
+    color: #49dc87;
+}
+
+.pnl-negative {
+    color: #ff7474;
+}
+
+.pnl-zero {
+    color: #aab4be;
+}
+
+.account-edit {
+    border: 1px solid #33404c;
+
+    background: #192129;
+    color: #dbe4ec;
+
+    border-radius: 8px;
+
+    padding: 6px 10px;
+
+    cursor: pointer;
+}
+
+.account-edit:hover {
+    background: #222c36;
+}
+
+/* ============================= */
+/* LIVE */
+/* ============================= */
+
 .live {
     display: flex;
     align-items: center;
+
     gap: 7px;
-    font-size: 12px;
+
+    font-size: 11px;
     color: #a9b4bf;
 }
 
 .dot {
     width: 8px;
     height: 8px;
+
     border-radius: 50%;
+
     background: #43d17a;
+
     box-shadow: 0 0 8px #43d17a;
 }
 
+/* ============================= */
+/* FEED */
+/* ============================= */
+
 .feed {
     flex: 1;
+
     padding: 24px 22px 80px;
 }
 
 .message {
     margin-bottom: 18px;
+
     animation: appear .25s ease;
 }
 
 @keyframes appear {
+
     from {
         opacity: 0;
-        transform: translateY(7px);
+        transform: translateY(-7px);
     }
 
     to {
         opacity: 1;
         transform: translateY(0);
     }
+
 }
+
+/* ============================= */
+/* MESSAGE HEADER */
+/* ============================= */
 
 .meta {
     display: flex;
     align-items: center;
+
     gap: 9px;
 
     margin-bottom: 7px;
@@ -543,13 +643,20 @@ body {
 
 .badge {
     padding: 3px 8px;
+
     border-radius: 999px;
+
     font-size: 11px;
     font-weight: 750;
 }
 
 .score {
     margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
     font-size: 12px;
     font-weight: 700;
 }
@@ -566,59 +673,85 @@ body {
     color: #8997a7;
 }
 
+/* ============================= */
+/* MESSAGE BODY */
+/* ============================= */
+
 .bubble {
     background: #12171d;
+
     border: 1px solid #252e38;
+
     border-radius: 15px;
 
     padding: 15px 17px;
 
     line-height: 1.55;
+
     font-size: 14px;
 }
+
+/* LONG */
 
 .message.long .bubble {
     border-left: 4px solid #3bd67f;
 }
 
+.env-long {
+    color: #49dc87;
+
+    background: rgba(73,220,135,.12);
+}
+
+/* SHORT */
+
 .message.short .bubble {
     border-left: 4px solid #ff6262;
 }
+
+.env-short {
+    color: #ff7474;
+
+    background: rgba(255,116,116,.12);
+}
+
+/* NEUTRAL */
 
 .message.neutral .bubble {
     border-left: 4px solid #e0b64d;
 }
 
-.env-long {
-    color: #49dc87;
-    background: rgba(73,220,135,.12);
-}
-
-.env-short {
-    color: #ff7474;
-    background: rgba(255,116,116,.12);
-}
-
 .env-neutral {
     color: #e6bd58;
+
     background: rgba(230,189,88,.12);
 }
 
+/* STATE */
+
 .state {
     margin-left: 3px;
+
     background: #202832;
+
     color: #cbd5df;
 }
 
 .state-long {
     background: rgba(73,220,135,.13);
+
     color: #55df8e;
 }
 
 .state-short {
     background: rgba(255,116,116,.13);
+
     color: #ff7777;
 }
+
+/* ============================= */
+/* ANALYSIS TEXT */
+/* ============================= */
 
 .section {
     margin-top: 8px;
@@ -630,43 +763,77 @@ body {
 
 .label {
     font-weight: 750;
+
     color: #d9e2eb;
 }
 
 .watch {
-    margin-top: 10px;
-    padding-top: 10px;
+    margin-top: 11px;
+
+    padding-top: 11px;
+
     border-top: 1px solid #252d36;
 }
 
+/* ============================= */
+/* EMPTY */
+/* ============================= */
+
 .empty {
     text-align: center;
+
     margin-top: 100px;
+
     color: #71808e;
 }
 
+/* ============================= */
+/* STATUS */
+/* ============================= */
+
 .footer-status {
     position: fixed;
+
     bottom: 15px;
+
     left: 50%;
+
     transform: translateX(-50%);
 
     padding: 7px 13px;
 
     background: #151b21;
+
     border: 1px solid #29323c;
+
     border-radius: 999px;
 
     color: #81909e;
+
     font-size: 11px;
 
     box-shadow: 0 5px 20px rgba(0,0,0,.35);
 }
 
-@media(max-width:700px) {
+/* ============================= */
+/* MOBILE */
+/* ============================= */
+
+@media(max-width:800px) {
 
     .header {
-        padding: 15px;
+        padding: 14px;
+    }
+
+    .header-top {
+        flex-wrap: wrap;
+    }
+
+    .account-box {
+        width: 100%;
+        margin-left: 0;
+
+        justify-content: space-between;
     }
 
     .feed {
@@ -684,47 +851,94 @@ body {
 }
 
 </style>
+
 </head>
 
 <body>
 
 <div class="app">
 
-    <header class="header">
+<header class="header">
 
-        <div class="header-top">
+<div class="header-top">
 
-            <div>
+<div class="title-area">
 
-                <div class="title">
-                   MNQ Ai Live Update by Tomasz
-                </div>
+<div class="title">
+MNQ Live Copilot
+</div>
 
-                <div class="subtitle">
-                    Range / Volume Profile / VWAP · 5M · 17:30–22:00 UK
-                </div>
-
-            </div>
-
-            <div class="live">
-                <span class="dot"></span>
-                LIVE
-            </div>
-
-        </div>
-
-    </header>
-
-    <main id="feed" class="feed">
-        <div class="empty">
-            Oczekiwanie na analizę...
-        </div>
-    </main>
+<div class="subtitle">
+Range / Volume Profile / VWAP · 5M · 17:30–22:00 UK
+</div>
 
 </div>
 
+
+<div class="account-box">
+
+<div class="account-row">
+
+<span class="account-label">
+BALANCE
+</span>
+
+<span id="balanceValue" class="account-value">
+£0.00
+</span>
+
+</div>
+
+
+<div class="account-row">
+
+<span class="account-label">
+TODAY PNL
+</span>
+
+<span id="pnlValue" class="account-value pnl-zero">
+£0.00
+</span>
+
+</div>
+
+
+<button
+class="account-edit"
+onclick="editAccount()"
+>
+Edit
+</button>
+
+</div>
+
+
+<div class="live">
+
+<span class="dot"></span>
+
+LIVE
+
+</div>
+
+</div>
+
+</header>
+
+
+<main id="feed" class="feed">
+
+<div class="empty">
+Oczekiwanie na analizę...
+</div>
+
+</main>
+
+</div>
+
+
 <div id="status" class="footer-status">
-    Łączenie...
+Łączenie...
 </div>
 
 
@@ -733,41 +947,60 @@ body {
 const key = __SAFE_KEY__;
 
 let lastIds = new Set();
+
 let previousScore = null;
+
 let firstLoad = true;
 
 
-/* ---------- SECURITY ---------- */
+/* ================================= */
+/* SECURITY */
+/* ================================= */
 
 function esc(value) {
 
     return String(value ?? "")
+
         .replaceAll("&", "&amp;")
+
         .replaceAll("<", "&lt;")
+
         .replaceAll(">", "&gt;")
+
         .replaceAll('"', "&quot;");
 
 }
 
 
-/* ---------- UK TIME ---------- */
+/* ================================= */
+/* UK TIME */
+/* ================================= */
 
 function ukTime(raw) {
 
-    if (!raw) return "";
+    if (!raw)
+        return "";
 
     try {
 
         const date = new Date(raw);
 
         return new Intl.DateTimeFormat(
+
             "en-GB",
+
             {
+
                 timeZone: "Europe/London",
+
                 hour: "2-digit",
+
                 minute: "2-digit",
+
                 hour12: false
+
             }
+
         ).format(date) + " UK";
 
     }
@@ -781,155 +1014,552 @@ function ukTime(raw) {
 }
 
 
-/* ---------- ANALYSIS PARSER ---------- */
+/* ================================= */
+/* ACCOUNT */
+/* ================================= */
+
+function loadAccount() {
+
+    const balance =
+        localStorage.getItem("mnq_balance") || "0";
+
+    const pnl =
+        localStorage.getItem("mnq_pnl") || "0";
+
+    updateAccountDisplay(
+        balance,
+        pnl
+    );
+
+}
+
+
+function updateAccountDisplay(balance, pnl) {
+
+    const balanceEl =
+        document.getElementById("balanceValue");
+
+    const pnlEl =
+        document.getElementById("pnlValue");
+
+
+    let balanceNum =
+        Number(balance);
+
+    let pnlNum =
+        Number(pnl);
+
+
+    if (!Number.isFinite(balanceNum))
+        balanceNum = 0;
+
+    if (!Number.isFinite(pnlNum))
+        pnlNum = 0;
+
+
+    balanceEl.textContent =
+        "£" + balanceNum.toFixed(2);
+
+
+    pnlEl.classList.remove(
+
+        "pnl-positive",
+
+        "pnl-negative",
+
+        "pnl-zero"
+
+    );
+
+
+    if (pnlNum > 0) {
+
+        pnlEl.classList.add(
+            "pnl-positive"
+        );
+
+        pnlEl.textContent =
+            "+£" + pnlNum.toFixed(2);
+
+    }
+
+    else if (pnlNum < 0) {
+
+        pnlEl.classList.add(
+            "pnl-negative"
+        );
+
+        pnlEl.textContent =
+            "-£" + Math.abs(pnlNum).toFixed(2);
+
+    }
+
+    else {
+
+        pnlEl.classList.add(
+            "pnl-zero"
+        );
+
+        pnlEl.textContent =
+            "£0.00";
+
+    }
+
+}
+
+
+function editAccount() {
+
+    const currentBalance =
+        localStorage.getItem("mnq_balance") || "0";
+
+    const currentPnl =
+        localStorage.getItem("mnq_pnl") || "0";
+
+
+    const balance = prompt(
+
+        "Podaj aktualne saldo:",
+
+        currentBalance
+
+    );
+
+
+    if (balance === null)
+        return;
+
+
+    const pnl = prompt(
+
+        "Podaj dzisiejszy PnL:",
+
+        currentPnl
+
+    );
+
+
+    if (pnl === null)
+        return;
+
+
+    const balanceNumber =
+        Number(
+            String(balance)
+                .replace(",", ".")
+        );
+
+
+    const pnlNumber =
+        Number(
+            String(pnl)
+                .replace(",", ".")
+        );
+
+
+    if (!Number.isFinite(balanceNumber)) {
+
+        alert("Nieprawidłowe saldo.");
+
+        return;
+
+    }
+
+
+    if (!Number.isFinite(pnlNumber)) {
+
+        alert("Nieprawidłowy PnL.");
+
+        return;
+
+    }
+
+
+    localStorage.setItem(
+
+        "mnq_balance",
+
+        String(balanceNumber)
+
+    );
+
+
+    localStorage.setItem(
+
+        "mnq_pnl",
+
+        String(pnlNumber)
+
+    );
+
+
+    loadAccount();
+
+}
+
+
+/* ================================= */
+/* ANALYSIS PARSER */
+/* ================================= */
 
 function parseReaction(text) {
 
-    text = String(text || "");
+    text =
+        String(text || "");
 
-    let environment = "NEUTRAL";
+
+    let environment =
+        "NEUTRAL";
+
 
     if (/LONG ENV/i.test(text))
-        environment = "LONG ENV";
+
+        environment =
+            "LONG ENV";
+
 
     else if (/SHORT ENV/i.test(text))
-        environment = "SHORT ENV";
+
+        environment =
+            "SHORT ENV";
 
 
     const scoreMatch =
-        text.match(/(?:LONG ENV|SHORT ENV|NEUTRAL)\\s*[—-]\\s*(\\d+)\\s*\\/\\s*10/i);
+
+        text.match(
+
+            /(?:LONG ENV|SHORT ENV|NEUTRAL)\\s*[—-]\\s*(\\d+)\\s*\\/\\s*10/i
+
+        );
+
 
     const score =
-        scoreMatch ? Number(scoreMatch[1]) : null;
+
+        scoreMatch
+
+        ? Number(scoreMatch[1])
+
+        : null;
 
 
     const stateMatch =
-        text.match(/Stan:\\s*([^\\n]+)/i);
+
+        text.match(
+
+            /Stan:\\s*([^\\n]+)/i
+
+        );
+
 
     const state =
-        stateMatch ? stateMatch[1].trim() : "";
+
+        stateMatch
+
+        ? stateMatch[1].trim()
+
+        : "";
 
 
     return {
+
         environment,
+
         score,
+
         state
+
     };
 
 }
 
 
-/* ---------- MESSAGE FORMAT ---------- */
+/* ================================= */
+/* FORMAT ANALYSIS */
+/* ================================= */
 
 function formatReaction(text) {
 
-    let lines = String(text || "").split("\\n");
+    let lines =
+        String(text || "").split("\\n");
 
-    /*
-       Pierwsza linia jest już pokazana
-       jako badge + score.
-    */
 
     if (
+
         lines.length &&
-        /^\\s*\\[.*UK\\].*(LONG ENV|SHORT ENV|NEUTRAL)/i.test(lines[0])
+
+        /^\\s*\\[.*UK\\].*(LONG ENV|SHORT ENV|NEUTRAL)/i.test(
+            lines[0]
+        )
+
     ) {
+
         lines.shift();
+
     }
 
 
     return lines.map(line => {
 
-        const safe = esc(line);
+        const safe =
+            esc(line);
+
 
         if (/^Zmiana 5M:/i.test(line))
-            return `<div class="section"><span class="label">Zmiana 5M:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+            return `
+
+            <div class="section">
+
+            <span class="label">
+            Zmiana 5M:
+            </span>
+
+            ${safe.substring(
+                safe.indexOf(":") + 1
+            )}
+
+            </div>
+
+            `;
+
 
         if (/^Range:/i.test(line))
-            return `<div class="section"><span class="label">Range:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+            return `
+
+            <div class="section">
+
+            <span class="label">
+            Range:
+            </span>
+
+            ${safe.substring(
+                safe.indexOf(":") + 1
+            )}
+
+            </div>
+
+            `;
+
 
         if (/^VP:/i.test(line))
-            return `<div class="section"><span class="label">VP:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+            return `
+
+            <div class="section">
+
+            <span class="label">
+            VP:
+            </span>
+
+            ${safe.substring(
+                safe.indexOf(":") + 1
+            )}
+
+            </div>
+
+            `;
+
 
         if (/^VWAP:/i.test(line))
-            return `<div class="section"><span class="label">VWAP:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+            return `
+
+            <div class="section">
+
+            <span class="label">
+            VWAP:
+            </span>
+
+            ${safe.substring(
+                safe.indexOf(":") + 1
+            )}
+
+            </div>
+
+            `;
+
 
         if (/^Konfluencja:/i.test(line))
-            return `<div class="section"><span class="label">Konfluencja:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+            return `
+
+            <div class="section">
+
+            <span class="label">
+            Konfluencja:
+            </span>
+
+            ${safe.substring(
+                safe.indexOf(":") + 1
+            )}
+
+            </div>
+
+            `;
+
 
         if (/^Teraz obserwuj:/i.test(line))
-            return `<div class="section watch"><span class="label">Teraz obserwuj:</span></div>`;
+
+            return `
+
+            <div class="section watch">
+
+            <span class="label">
+            Teraz obserwuj:
+            </span>
+
+            </div>
+
+            `;
+
 
         if (/^Stan:/i.test(line))
+
             return "";
+
 
         if (/^\\s*[-•]/.test(line))
-            return `<div class="section">${safe}</div>`;
+
+            return `
+
+            <div class="section">
+
+            ${safe}
+
+            </div>
+
+            `;
+
 
         if (!line.trim())
+
             return "";
 
-        return `<div class="section">${safe}</div>`;
+
+        return `
+
+        <div class="section">
+
+        ${safe}
+
+        </div>
+
+        `;
 
     }).join("");
 
 }
 
 
-/* ---------- CREATE MESSAGE ---------- */
+/* ================================= */
+/* CREATE MESSAGE */
+/* ================================= */
 
 function createMessage(item) {
 
-    const parsed = parseReaction(item.reaction);
-
-    const wrapper = document.createElement("div");
-
-    wrapper.className = "message";
-
-
-    let envClass = "neutral";
-    let envBadge = "env-neutral";
-
-    if (parsed.environment === "LONG ENV") {
-        envClass = "long";
-        envBadge = "env-long";
-    }
-
-    else if (parsed.environment === "SHORT ENV") {
-        envClass = "short";
-        envBadge = "env-short";
-    }
-
-    wrapper.classList.add(envClass);
+    const parsed =
+        parseReaction(
+            item.reaction
+        );
 
 
-    let deltaHTML = "";
+    const wrapper =
+        document.createElement("div");
+
+
+    wrapper.className =
+        "message";
+
+
+    let envClass =
+        "neutral";
+
+
+    let envBadge =
+        "env-neutral";
+
 
     if (
-        parsed.score !== null &&
-        previousScore !== null
+        parsed.environment ===
+        "LONG ENV"
     ) {
 
-        const delta = parsed.score - previousScore;
+        envClass =
+            "long";
+
+        envBadge =
+            "env-long";
+
+    }
+
+
+    else if (
+        parsed.environment ===
+        "SHORT ENV"
+    ) {
+
+        envClass =
+            "short";
+
+        envBadge =
+            "env-short";
+
+    }
+
+
+    wrapper.classList.add(
+        envClass
+    );
+
+
+    let deltaHTML =
+        "";
+
+
+    if (
+
+        parsed.score !== null &&
+
+        previousScore !== null
+
+    ) {
+
+        const delta =
+
+            parsed.score -
+            previousScore;
+
 
         if (delta > 0) {
 
             deltaHTML =
-                `<span class="delta-up">▲ +${delta}</span>`;
+
+                `<span class="delta-up">
+                ▲ +${delta}
+                </span>`;
 
         }
+
 
         else if (delta < 0) {
 
             deltaHTML =
-                `<span class="delta-down">▼ ${delta}</span>`;
+
+                `<span class="delta-down">
+                ▼ ${delta}
+                </span>`;
 
         }
+
 
         else {
 
             deltaHTML =
-                `<span class="delta-flat">→ 0</span>`;
+
+                `<span class="delta-flat">
+                → 0
+                </span>`;
 
         }
 
@@ -937,173 +1567,280 @@ function createMessage(item) {
 
 
     if (parsed.score !== null)
-        previousScore = parsed.score;
+
+        previousScore =
+            parsed.score;
 
 
-    let stateClass = "state";
+    let stateClass =
+        "state";
 
-    if (/WATCH LONG/i.test(parsed.state))
-        stateClass += " state-long";
 
-    if (/WATCH SHORT/i.test(parsed.state))
-        stateClass += " state-short";
+    if (
+        /WATCH LONG/i.test(
+            parsed.state
+        )
+    )
+
+        stateClass +=
+            " state-long";
+
+
+    if (
+        /WATCH SHORT/i.test(
+            parsed.state
+        )
+    )
+
+        stateClass +=
+            " state-short";
 
 
     wrapper.innerHTML = `
 
-        <div class="meta">
+    <div class="meta">
 
-            <span class="time">
-                ${esc(ukTime(item.market_time_uk))}
-            </span>
+        <span class="time">
 
-            <span class="badge ${envBadge}">
-                ${esc(parsed.environment)}
-            </span>
+        ${esc(
+            ukTime(
+                item.market_time_uk
+            )
+        )}
 
-            ${
-                parsed.state
-                ?
-                `<span class="badge ${stateClass}">
-                    ${esc(parsed.state)}
-                 </span>`
-                :
-                ""
-            }
-
-            <span class="score">
-
-                ${
-                    parsed.score !== null
-                    ?
-                    `${parsed.score}/10`
-                    :
-                    ""
-                }
-
-                ${deltaHTML}
-
-            </span>
-
-        </div>
+        </span>
 
 
-        <div class="bubble">
+        <span class="badge ${envBadge}">
 
-            ${formatReaction(item.reaction)}
+        ${esc(
+            parsed.environment
+        )}
 
-        </div>
+        </span>
+
+
+        ${
+            parsed.state
+
+            ?
+
+            `<span class="badge ${stateClass}">
+            ${esc(parsed.state)}
+            </span>`
+
+            :
+
+            ""
+        }
+
+
+        <span class="score">
+
+        ${
+            parsed.score !== null
+
+            ?
+
+            `${parsed.score}/10`
+
+            :
+
+            ""
+        }
+
+        ${deltaHTML}
+
+        </span>
+
+    </div>
+
+
+    <div class="bubble">
+
+    ${formatReaction(
+        item.reaction
+    )}
+
+    </div>
 
     `;
+
 
     return wrapper;
 
 }
 
 
-/* ---------- LOAD FEED ---------- */
+/* ================================= */
+/* LOAD FEED */
+/* ================================= */
 
 async function loadFeed() {
 
     const status =
-        document.getElementById("status");
+
+        document.getElementById(
+            "status"
+        );
+
 
     try {
 
         const response =
+
             await fetch(
+
                 `/feed/${encodeURIComponent(key)}?limit=40`,
-                {cache: "no-store"}
+
+                {
+                    cache: "no-store"
+                }
+
             );
 
 
         if (!response.ok)
-            throw new Error("HTTP " + response.status);
+
+            throw new Error(
+                "HTTP " +
+                response.status
+            );
 
 
         const data =
+
             await response.json();
 
 
         const feed =
-            document.getElementById("feed");
+
+            document.getElementById(
+                "feed"
+            );
 
 
         const items =
+
             data.items || [];
 
 
         if (firstLoad) {
 
-            feed.innerHTML = "";
+            feed.innerHTML =
+                "";
+
 
             if (!items.length) {
 
-                feed.innerHTML =
-                    `<div class="empty">
-                        Oczekiwanie na pierwszą analizę...
-                     </div>`;
+                feed.innerHTML = `
+
+                <div class="empty">
+
+                Oczekiwanie na pierwszą analizę...
+
+                </div>
+
+                `;
 
             }
 
         }
 
 
-        let added = false;
-
-
         items.forEach(item => {
 
             const id =
-                String(item.id || item.snapshot_id || item.market_time_uk);
+
+                String(
+
+                    item.id ||
+
+                    item.snapshot_id ||
+
+                    item.market_time_uk
+
+                );
 
 
-            if (lastIds.has(id))
+            if (
+                lastIds.has(id)
+            )
+
                 return;
 
 
             if (
-                feed.querySelector(".empty")
+                feed.querySelector(
+                    ".empty"
+                )
             ) {
-                feed.innerHTML = "";
+
+                feed.innerHTML =
+                    "";
+
             }
 
 
             lastIds.add(id);
 
+
             const message =
-                createMessage(item);
 
-            feed.prepend(message);
+                createMessage(
+                    item
+                );
 
-            added = true;
+
+            /*
+            NOWA ANALIZA
+            TRAFIA NA GÓRĘ
+            */
+
+            feed.prepend(
+                message
+            );
 
         });
 
 
-       
-
         status.textContent =
+
             "LIVE · odświeżono " +
-            new Date().toLocaleTimeString(
-                "en-GB",
-                {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit"
-                }
-            );
+
+            new Date()
+                .toLocaleTimeString(
+
+                    "en-GB",
+
+                    {
+
+                        hour: "2-digit",
+
+                        minute: "2-digit",
+
+                        second: "2-digit"
+
+                    }
+
+                );
 
 
-        firstLoad = false;
+        firstLoad =
+            false;
 
     }
 
+
     catch(error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         status.textContent =
+
             "Błąd połączenia · ponawiam...";
 
     }
@@ -1111,14 +1848,27 @@ async function loadFeed() {
 }
 
 
+/* ================================= */
+/* START */
+/* ================================= */
+
+loadAccount();
+
 loadFeed();
 
-setInterval(loadFeed, 5000);
+setInterval(
+    loadFeed,
+    5000
+);
 
 </script>
 
 </body>
+
 </html>
 """
 
-    return html.replace("__SAFE_KEY__", safe_key)
+    return html.replace(
+        "__SAFE_KEY__",
+        safe_key
+    )
