@@ -1130,39 +1130,3 @@ setInterval(loadFeed, 5000);
 """
 
     return html.replace("__SAFE_KEY__", safe_key)
-<!doctype html>
-<html lang="pl">
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>MNQ Exact Levels Copilot</title>
-<style>
-body{{font-family:system-ui,-apple-system,Segoe UI,sans-serif;margin:0;background:#0b0d10;color:#e9eef5}}
-.wrap{{max-width:900px;margin:auto;padding:24px}}
-h1{{font-size:24px;margin:0 0 8px}}
-.sub{{color:#9aa6b2;margin-bottom:18px}}
-.card{{background:#151a20;border:1px solid #28313b;border-radius:14px;padding:16px;margin:12px 0;white-space:pre-wrap;line-height:1.45}}
-.time{{font-weight:700;margin-bottom:8px}}
-</style>
-</head>
-<body><div class="wrap">
-<h1>MNQ Live Copilot — Exact Levels</h1>
-<div class="sub">Tylko Twoje Range / VP / VWAP + zamknięte świece 5M. 17:30–22:00 UK.</div>
-<div id="feed"></div></div>
-<script>
-const key={safe_key};
-function esc(s){{return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}}
-async function load(){{
-  const r=await fetch(`/feed/${{encodeURIComponent(key)}}?limit=40`,{{cache:'no-store'}});
-  const j=await r.json();
-  const root=document.getElementById('feed'); root.innerHTML='';
-  [...j.items].reverse().forEach(x=>{{
-    const d=document.createElement('div'); d.className='card';
-    d.innerHTML=`<div class="time">${{esc(x.market_time_uk || '')}}</div>${{esc(x.reaction)}}`;
-    root.appendChild(d);
-  }});
-}}
-load(); setInterval(load,5000);
-</script>
-</body></html>
-"""
