@@ -424,8 +424,712 @@ def report(key: str) -> str:
 def dashboard(key: str) -> str:
     if not secrets.compare_digest(key, REPORT_KEY):
         raise HTTPException(status_code=403, detail="Invalid report key")
+
     safe_key = json.dumps(key)
-    return f"""
+
+    html = """
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+
+<title>MNQ Live Copilot</title>
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080b0f;
+    color: #eaf0f6;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.app {
+    max-width: 980px;
+    margin: auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    padding: 18px 22px;
+    background: rgba(8,11,15,.94);
+    backdrop-filter: blur(12px);
+
+    border-bottom: 1px solid #202832;
+}
+
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.title {
+    font-size: 22px;
+    font-weight: 750;
+}
+
+.subtitle {
+    margin-top: 5px;
+    color: #8997a7;
+    font-size: 13px;
+}
+
+.live {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    color: #a9b4bf;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #43d17a;
+    box-shadow: 0 0 8px #43d17a;
+}
+
+.feed {
+    flex: 1;
+    padding: 24px 22px 80px;
+}
+
+.message {
+    margin-bottom: 18px;
+    animation: appear .25s ease;
+}
+
+@keyframes appear {
+    from {
+        opacity: 0;
+        transform: translateY(7px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.meta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+
+    margin-bottom: 7px;
+
+    font-size: 12px;
+    color: #83909d;
+}
+
+.time {
+    font-weight: 650;
+    color: #b6c0cb;
+}
+
+.badge {
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.score {
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.delta-up {
+    color: #53db87;
+}
+
+.delta-down {
+    color: #ff7070;
+}
+
+.delta-flat {
+    color: #8997a7;
+}
+
+.bubble {
+    background: #12171d;
+    border: 1px solid #252e38;
+    border-radius: 15px;
+
+    padding: 15px 17px;
+
+    line-height: 1.55;
+    font-size: 14px;
+}
+
+.message.long .bubble {
+    border-left: 4px solid #3bd67f;
+}
+
+.message.short .bubble {
+    border-left: 4px solid #ff6262;
+}
+
+.message.neutral .bubble {
+    border-left: 4px solid #e0b64d;
+}
+
+.env-long {
+    color: #49dc87;
+    background: rgba(73,220,135,.12);
+}
+
+.env-short {
+    color: #ff7474;
+    background: rgba(255,116,116,.12);
+}
+
+.env-neutral {
+    color: #e6bd58;
+    background: rgba(230,189,88,.12);
+}
+
+.state {
+    margin-left: 3px;
+    background: #202832;
+    color: #cbd5df;
+}
+
+.state-long {
+    background: rgba(73,220,135,.13);
+    color: #55df8e;
+}
+
+.state-short {
+    background: rgba(255,116,116,.13);
+    color: #ff7777;
+}
+
+.section {
+    margin-top: 8px;
+}
+
+.section:first-child {
+    margin-top: 0;
+}
+
+.label {
+    font-weight: 750;
+    color: #d9e2eb;
+}
+
+.watch {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #252d36;
+}
+
+.empty {
+    text-align: center;
+    margin-top: 100px;
+    color: #71808e;
+}
+
+.footer-status {
+    position: fixed;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    padding: 7px 13px;
+
+    background: #151b21;
+    border: 1px solid #29323c;
+    border-radius: 999px;
+
+    color: #81909e;
+    font-size: 11px;
+
+    box-shadow: 0 5px 20px rgba(0,0,0,.35);
+}
+
+@media(max-width:700px) {
+
+    .header {
+        padding: 15px;
+    }
+
+    .feed {
+        padding: 18px 12px 70px;
+    }
+
+    .bubble {
+        font-size: 13px;
+    }
+
+    .subtitle {
+        font-size: 12px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <header class="header">
+
+        <div class="header-top">
+
+            <div>
+
+                <div class="title">
+                    MNQ Live Copilot
+                </div>
+
+                <div class="subtitle">
+                    Range / Volume Profile / VWAP · 5M · 17:30–22:00 UK
+                </div>
+
+            </div>
+
+            <div class="live">
+                <span class="dot"></span>
+                LIVE
+            </div>
+
+        </div>
+
+    </header>
+
+    <main id="feed" class="feed">
+        <div class="empty">
+            Oczekiwanie na analizę...
+        </div>
+    </main>
+
+</div>
+
+<div id="status" class="footer-status">
+    Łączenie...
+</div>
+
+
+<script>
+
+const key = __SAFE_KEY__;
+
+let lastIds = new Set();
+let previousScore = null;
+let firstLoad = true;
+
+
+/* ---------- SECURITY ---------- */
+
+function esc(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;");
+
+}
+
+
+/* ---------- UK TIME ---------- */
+
+function ukTime(raw) {
+
+    if (!raw) return "";
+
+    try {
+
+        const date = new Date(raw);
+
+        return new Intl.DateTimeFormat(
+            "en-GB",
+            {
+                timeZone: "Europe/London",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: false
+            }
+        ).format(date) + " UK";
+
+    }
+
+    catch(e) {
+
+        return raw;
+
+    }
+
+}
+
+
+/* ---------- ANALYSIS PARSER ---------- */
+
+function parseReaction(text) {
+
+    text = String(text || "");
+
+    let environment = "NEUTRAL";
+
+    if (/LONG ENV/i.test(text))
+        environment = "LONG ENV";
+
+    else if (/SHORT ENV/i.test(text))
+        environment = "SHORT ENV";
+
+
+    const scoreMatch =
+        text.match(/(?:LONG ENV|SHORT ENV|NEUTRAL)\\s*[—-]\\s*(\\d+)\\s*\\/\\s*10/i);
+
+    const score =
+        scoreMatch ? Number(scoreMatch[1]) : null;
+
+
+    const stateMatch =
+        text.match(/Stan:\\s*([^\\n]+)/i);
+
+    const state =
+        stateMatch ? stateMatch[1].trim() : "";
+
+
+    return {
+        environment,
+        score,
+        state
+    };
+
+}
+
+
+/* ---------- MESSAGE FORMAT ---------- */
+
+function formatReaction(text) {
+
+    let lines = String(text || "").split("\\n");
+
+    /*
+       Pierwsza linia jest już pokazana
+       jako badge + score.
+    */
+
+    if (
+        lines.length &&
+        /^\\s*\\[.*UK\\].*(LONG ENV|SHORT ENV|NEUTRAL)/i.test(lines[0])
+    ) {
+        lines.shift();
+    }
+
+
+    return lines.map(line => {
+
+        const safe = esc(line);
+
+        if (/^Zmiana 5M:/i.test(line))
+            return `<div class="section"><span class="label">Zmiana 5M:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+        if (/^Range:/i.test(line))
+            return `<div class="section"><span class="label">Range:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+        if (/^VP:/i.test(line))
+            return `<div class="section"><span class="label">VP:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+        if (/^VWAP:/i.test(line))
+            return `<div class="section"><span class="label">VWAP:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+        if (/^Konfluencja:/i.test(line))
+            return `<div class="section"><span class="label">Konfluencja:</span>${safe.substring(safe.indexOf(":") + 1)}</div>`;
+
+        if (/^Teraz obserwuj:/i.test(line))
+            return `<div class="section watch"><span class="label">Teraz obserwuj:</span></div>`;
+
+        if (/^Stan:/i.test(line))
+            return "";
+
+        if (/^\\s*[-•]/.test(line))
+            return `<div class="section">${safe}</div>`;
+
+        if (!line.trim())
+            return "";
+
+        return `<div class="section">${safe}</div>`;
+
+    }).join("");
+
+}
+
+
+/* ---------- CREATE MESSAGE ---------- */
+
+function createMessage(item) {
+
+    const parsed = parseReaction(item.reaction);
+
+    const wrapper = document.createElement("div");
+
+    wrapper.className = "message";
+
+
+    let envClass = "neutral";
+    let envBadge = "env-neutral";
+
+    if (parsed.environment === "LONG ENV") {
+        envClass = "long";
+        envBadge = "env-long";
+    }
+
+    else if (parsed.environment === "SHORT ENV") {
+        envClass = "short";
+        envBadge = "env-short";
+    }
+
+    wrapper.classList.add(envClass);
+
+
+    let deltaHTML = "";
+
+    if (
+        parsed.score !== null &&
+        previousScore !== null
+    ) {
+
+        const delta = parsed.score - previousScore;
+
+        if (delta > 0) {
+
+            deltaHTML =
+                `<span class="delta-up">▲ +${delta}</span>`;
+
+        }
+
+        else if (delta < 0) {
+
+            deltaHTML =
+                `<span class="delta-down">▼ ${delta}</span>`;
+
+        }
+
+        else {
+
+            deltaHTML =
+                `<span class="delta-flat">→ 0</span>`;
+
+        }
+
+    }
+
+
+    if (parsed.score !== null)
+        previousScore = parsed.score;
+
+
+    let stateClass = "state";
+
+    if (/WATCH LONG/i.test(parsed.state))
+        stateClass += " state-long";
+
+    if (/WATCH SHORT/i.test(parsed.state))
+        stateClass += " state-short";
+
+
+    wrapper.innerHTML = `
+
+        <div class="meta">
+
+            <span class="time">
+                ${esc(ukTime(item.market_time_uk))}
+            </span>
+
+            <span class="badge ${envBadge}">
+                ${esc(parsed.environment)}
+            </span>
+
+            ${
+                parsed.state
+                ?
+                `<span class="badge ${stateClass}">
+                    ${esc(parsed.state)}
+                 </span>`
+                :
+                ""
+            }
+
+            <span class="score">
+
+                ${
+                    parsed.score !== null
+                    ?
+                    `${parsed.score}/10`
+                    :
+                    ""
+                }
+
+                ${deltaHTML}
+
+            </span>
+
+        </div>
+
+
+        <div class="bubble">
+
+            ${formatReaction(item.reaction)}
+
+        </div>
+
+    `;
+
+    return wrapper;
+
+}
+
+
+/* ---------- LOAD FEED ---------- */
+
+async function loadFeed() {
+
+    const status =
+        document.getElementById("status");
+
+    try {
+
+        const response =
+            await fetch(
+                `/feed/${encodeURIComponent(key)}?limit=40`,
+                {cache: "no-store"}
+            );
+
+
+        if (!response.ok)
+            throw new Error("HTTP " + response.status);
+
+
+        const data =
+            await response.json();
+
+
+        const feed =
+            document.getElementById("feed");
+
+
+        const items =
+            data.items || [];
+
+
+        if (firstLoad) {
+
+            feed.innerHTML = "";
+
+            if (!items.length) {
+
+                feed.innerHTML =
+                    `<div class="empty">
+                        Oczekiwanie na pierwszą analizę...
+                     </div>`;
+
+            }
+
+        }
+
+
+        let added = false;
+
+
+        items.forEach(item => {
+
+            const id =
+                String(item.id || item.snapshot_id || item.market_time_uk);
+
+
+            if (lastIds.has(id))
+                return;
+
+
+            if (
+                feed.querySelector(".empty")
+            ) {
+                feed.innerHTML = "";
+            }
+
+
+            lastIds.add(id);
+
+            const message =
+                createMessage(item);
+
+            feed.appendChild(message);
+
+            added = true;
+
+        });
+
+
+        if (added) {
+
+            window.scrollTo({
+                top: document.body.scrollHeight,
+                behavior: firstLoad ? "auto" : "smooth"
+            });
+
+        }
+
+
+        status.textContent =
+            "LIVE · odświeżono " +
+            new Date().toLocaleTimeString(
+                "en-GB",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                }
+            );
+
+
+        firstLoad = false;
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        status.textContent =
+            "Błąd połączenia · ponawiam...";
+
+    }
+
+}
+
+
+loadFeed();
+
+setInterval(loadFeed, 5000);
+
+</script>
+
+</body>
+</html>
+"""
+
+    return html.replace("__SAFE_KEY__", safe_key)
 <!doctype html>
 <html lang="pl">
 <head>
