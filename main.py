@@ -1074,22 +1074,14 @@ async function loadFeed() {
             const message =
                 createMessage(item);
 
-            feed.appendChild(message);
+            feed.prepend(message);
 
             added = true;
 
         });
 
 
-        if (added) {
-
-            window.scrollTo({
-                top: document.body.scrollHeight,
-                behavior: firstLoad ? "auto" : "smooth"
-            });
-
-        }
-
+       
 
         status.textContent =
             "LIVE · odświeżono " +
