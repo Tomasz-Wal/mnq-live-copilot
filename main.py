@@ -335,6 +335,15 @@ async def tradingview_webhook(token: str, request: Request, background_tasks: Ba
         raise HTTPException(status_code=403, detail="Invalid webhook token")
     try:
         payload = await request.json()
+
+        print("TV PAYLOAD:", json.dumps(payload, ensure_ascii=False), flush=True)
+        print(
+            "TIME_UK:",
+            payload.get("time_uk"),
+            "ALLOWED:",
+            in_allowed_window(str(payload.get("time_uk"))),
+            flush=True,
+)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Expected valid JSON: {exc}") from exc
     if not isinstance(payload, dict):
