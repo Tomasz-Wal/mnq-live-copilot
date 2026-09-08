@@ -6,6 +6,7 @@ import threading
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 
@@ -134,9 +135,20 @@ def init_db() -> None:
 init_db()
 
 
-def parse_market_time(value: str) -> datetime:
-    return datetime.strptime(value, "%Y-%m-%d %H:%M")
+UK_TZ = ZoneInfo("Europe/London")
 
+def parse_market_time(value: str) -> datetime:
+    value = value.strip()
+
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+        if dt.tzinfo is not None:
+            return dt.astimezone(UK_TZ).replace(tzinfo=None)
+    except ValueError:
+        pass
+
+    return datetime.strptime(value, "%Y-%m-%d %H:%M")
 
 def in_allowed_window(value: str) -> bool:
     try:
