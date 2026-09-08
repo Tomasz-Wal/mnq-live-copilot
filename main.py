@@ -697,7 +697,7 @@ body {
             <div>
 
                 <div class="title">
-                    MNQ Live Copilot
+                   MNQ Ai Live Update by Tomasz
                 </div>
 
                 <div class="subtitle">
