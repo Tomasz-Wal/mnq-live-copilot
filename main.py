@@ -418,25 +418,153 @@ def report(key: str) -> str:
     if not secrets.compare_digest(key, REPORT_KEY):
         raise HTTPException(status_code=403, detail="Invalid report key")
     return build_report()
+# ============================================================
+# SHARED ACCOUNT STATE — BALANCE / DAILY PNL
+# ============================================================
+
+import math
 
 
+def init_account_state() -> None:
+    with _db_lock, db() as con:
+        con.execute(
+            """
+            CREATE TABLE IF NOT EXISTS account_state (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                balance REAL NOT NULL DEFAULT 0,
+                pnl REAL NOT NULL DEFAULT 0,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        con.execute(
+            """
+            INSERT OR IGNORE INTO account_state
+            (id, balance, pnl)
+            VALUES (1, 0, 0)
+            """
+        )
+
+
+init_account_state()
+
+
+@app.get("/account/{key:path}")
+def get_account_state(key: str) -> dict[str, Any]:
+
+    if not secrets.compare_digest(key, REPORT_KEY):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid report key"
+        )
+
+    with _db_lock, db() as con:
+
+        row = con.execute(
+            """
+            SELECT balance, pnl, updated_at
+            FROM account_state
+            WHERE id = 1
+            """
+        ).fetchone()
+
+    if not row:
+        return {
+            "balance": 0,
+            "pnl": 0,
+            "updated_at": None
+        }
+
+    return {
+        "balance": float(row["balance"]),
+        "pnl": float(row["pnl"]),
+        "updated_at": row["updated_at"]
+    }
+
+
+@app.post("/account/{key:path}")
+async def update_account_state(
+    key: str,
+    request: Request
+) -> dict[str, Any]:
+
+    if not secrets.compare_digest(key, REPORT_KEY):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid report key"
+        )
+
+    try:
+        payload = await request.json()
+
+        balance = float(payload.get("balance"))
+        pnl = float(payload.get("pnl"))
+
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid balance or PnL"
+        )
+
+    if not math.isfinite(balance) or not math.isfinite(pnl):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid balance or PnL"
+        )
+
+    with _db_lock, db() as con:
+
+        con.execute(
+            """
+            UPDATE account_state
+
+            SET
+                balance = ?,
+                pnl = ?,
+                updated_at = CURRENT_TIMESTAMP
+
+            WHERE id = 1
+            """,
+            (
+                balance,
+                pnl
+            )
+        )
+
+    return {
+        "ok": True,
+        "balance": balance,
+        "pnl": pnl
+    }
 @app.get("/dashboard/{key:path}", response_class=HTMLResponse)
 def dashboard(key: str) -> str:
+
     if not secrets.compare_digest(key, REPORT_KEY):
-        raise HTTPException(status_code=403, detail="Invalid report key")
+
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid report key"
+        )
 
     safe_key = json.dumps(key)
 
     html = """
 <!doctype html>
+
 <html lang="pl">
 
 <head>
 
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8">
 
-<title>MNQ Live Copilot</title>
+<meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+>
+
+<title>NQ Edge Monitor</title>
+
 
 <style>
 
@@ -444,143 +572,234 @@ def dashboard(key: str) -> str:
     box-sizing: border-box;
 }
 
+
 body {
+
     margin: 0;
+
     background: #080b0f;
+
     color: #eaf0f6;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+    font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
 }
+
 
 .app {
+
+    width: 100%;
+
     max-width: 1100px;
+
     margin: auto;
+
     min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+
 }
 
-/* ============================= */
+
+/* ===================================================== */
 /* HEADER */
-/* ============================= */
+/* ===================================================== */
+
 
 .header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
 
-    padding: 18px 22px;
+    position: sticky;
+
+    top: 0;
+
+    z-index: 20;
+
+    padding: 16px 22px;
 
     background: rgba(8,11,15,.96);
+
     backdrop-filter: blur(12px);
 
     border-bottom: 1px solid #202832;
+
 }
+
 
 .header-top {
+
     display: flex;
+
     align-items: center;
+
     gap: 20px;
+
 }
+
 
 .title-area {
-    min-width: 260px;
+
+    min-width: 250px;
+
 }
+
 
 .title {
-    font-size: 22px;
-    font-weight: 750;
+
+    font-size: 23px;
+
+    font-weight: 780;
+
 }
+
 
 .subtitle {
-    margin-top: 5px;
+
+    margin-top: 4px;
+
     color: #8997a7;
-    font-size: 13px;
+
+    font-size: 12px;
+
 }
 
-/* ============================= */
+
+/* ===================================================== */
 /* ACCOUNT */
-/* ============================= */
+/* ===================================================== */
+
 
 .account-box {
+
     margin-left: auto;
 
     display: flex;
+
     align-items: center;
 
-    gap: 18px;
+    gap: 20px;
 
-    padding: 8px 12px;
-
-    border: 1px solid #26303a;
-    border-radius: 12px;
+    padding: 9px 12px;
 
     background: #11171d;
+
+    border: 1px solid #26303a;
+
+    border-radius: 12px;
+
 }
+
 
 .account-row {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
 
-    min-width: 100px;
+    display: flex;
+
+    flex-direction: column;
+
+    min-width: 105px;
+
 }
+
 
 .account-label {
+
+    color: #778592;
+
     font-size: 10px;
-    color: #7f8b97;
+
     font-weight: 700;
+
+    letter-spacing: .4px;
+
 }
+
 
 .account-value {
-    font-size: 15px;
-    font-weight: 750;
+
+    margin-top: 2px;
+
+    color: #eef4fa;
+
+    font-size: 16px;
+
+    font-weight: 780;
+
 }
+
 
 .pnl-positive {
-    color: #49dc87;
+
+    color: #45dc86;
+
 }
+
 
 .pnl-negative {
-    color: #ff7474;
+
+    color: #ff6969;
+
 }
+
 
 .pnl-zero {
+
     color: #aab4be;
+
 }
 
-.account-edit {
-    border: 1px solid #33404c;
 
-    background: #192129;
-    color: #dbe4ec;
+.edit-button {
+
+    border: 1px solid #35414d;
+
+    background: #1a222a;
+
+    color: #dce5ed;
+
+    padding: 7px 11px;
 
     border-radius: 8px;
 
-    padding: 6px 10px;
-
     cursor: pointer;
+
+    font-weight: 650;
+
 }
 
-.account-edit:hover {
-    background: #222c36;
+
+.edit-button:hover {
+
+    background: #222d37;
+
 }
 
-/* ============================= */
+
+/* ===================================================== */
 /* LIVE */
-/* ============================= */
+/* ===================================================== */
+
 
 .live {
+
     display: flex;
+
     align-items: center;
 
-    gap: 7px;
+    gap: 6px;
 
     font-size: 11px;
-    color: #a9b4bf;
+
+    color: #a6b0ba;
+
 }
 
-.dot {
+
+.live-dot {
+
     width: 8px;
+
     height: 8px;
 
     border-radius: 50%;
@@ -588,223 +807,345 @@ body {
     background: #43d17a;
 
     box-shadow: 0 0 8px #43d17a;
+
 }
 
-/* ============================= */
+
+/* ===================================================== */
 /* FEED */
-/* ============================= */
+/* ===================================================== */
+
 
 .feed {
-    flex: 1;
 
-    padding: 24px 22px 80px;
+    padding:
+
+        24px
+        22px
+        80px;
+
 }
+
 
 .message {
+
     margin-bottom: 18px;
 
-    animation: appear .25s ease;
+    animation:
+
+        appear
+        .25s
+        ease;
+
 }
+
 
 @keyframes appear {
 
     from {
+
         opacity: 0;
-        transform: translateY(-7px);
+
+        transform:
+            translateY(-6px);
+
     }
 
     to {
+
         opacity: 1;
-        transform: translateY(0);
+
+        transform:
+            translateY(0);
+
     }
 
 }
 
-/* ============================= */
-/* MESSAGE HEADER */
-/* ============================= */
+
+/* ===================================================== */
+/* MESSAGE META */
+/* ===================================================== */
+
 
 .meta {
+
     display: flex;
+
     align-items: center;
 
-    gap: 9px;
+    gap: 8px;
 
     margin-bottom: 7px;
 
     font-size: 12px;
-    color: #83909d;
+
 }
+
 
 .time {
+
+    color: #b9c3cd;
+
     font-weight: 650;
-    color: #b6c0cb;
+
 }
 
+
 .badge {
-    padding: 3px 8px;
+
+    padding:
+
+        3px
+        8px;
 
     border-radius: 999px;
 
     font-size: 11px;
+
     font-weight: 750;
+
 }
 
+
 .score {
+
     margin-left: auto;
 
     display: flex;
-    align-items: center;
-    gap: 7px;
 
-    font-size: 12px;
-    font-weight: 700;
+    align-items: center;
+
+    gap: 8px;
+
+    font-weight: 750;
+
 }
+
 
 .delta-up {
-    color: #53db87;
+
+    color: #4ddd87;
+
 }
+
 
 .delta-down {
-    color: #ff7070;
+
+    color: #ff6e6e;
+
 }
+
 
 .delta-flat {
-    color: #8997a7;
+
+    color: #84909b;
+
 }
 
-/* ============================= */
-/* MESSAGE BODY */
-/* ============================= */
+
+/* ===================================================== */
+/* ENVIRONMENT */
+/* ===================================================== */
+
+
+.env-long {
+
+    color: #49dc87;
+
+    background:
+        rgba(73,220,135,.12);
+
+}
+
+
+.env-short {
+
+    color: #ff7474;
+
+    background:
+        rgba(255,116,116,.12);
+
+}
+
+
+.env-neutral {
+
+    color: #e6bd58;
+
+    background:
+        rgba(230,189,88,.12);
+
+}
+
+
+/* ===================================================== */
+/* STATE */
+/* ===================================================== */
+
+
+.state {
+
+    color: #cbd5df;
+
+    background: #202832;
+
+}
+
+
+.state-long {
+
+    color: #55df8e;
+
+    background:
+        rgba(73,220,135,.13);
+
+}
+
+
+.state-short {
+
+    color: #ff7777;
+
+    background:
+        rgba(255,116,116,.13);
+
+}
+
+
+/* ===================================================== */
+/* MESSAGE */
+/* ===================================================== */
+
 
 .bubble {
+
+    padding:
+
+        15px
+        17px;
+
     background: #12171d;
 
-    border: 1px solid #252e38;
+    border:
+
+        1px solid
+        #252e38;
 
     border-radius: 15px;
-
-    padding: 15px 17px;
 
     line-height: 1.55;
 
     font-size: 14px;
+
 }
 
-/* LONG */
 
 .message.long .bubble {
-    border-left: 4px solid #3bd67f;
+
+    border-left:
+
+        4px solid
+        #3bd67f;
+
 }
 
-.env-long {
-    color: #49dc87;
-
-    background: rgba(73,220,135,.12);
-}
-
-/* SHORT */
 
 .message.short .bubble {
-    border-left: 4px solid #ff6262;
+
+    border-left:
+
+        4px solid
+        #ff6262;
+
 }
 
-.env-short {
-    color: #ff7474;
-
-    background: rgba(255,116,116,.12);
-}
-
-/* NEUTRAL */
 
 .message.neutral .bubble {
-    border-left: 4px solid #e0b64d;
+
+    border-left:
+
+        4px solid
+        #e0b64d;
+
 }
 
-.env-neutral {
-    color: #e6bd58;
-
-    background: rgba(230,189,88,.12);
-}
-
-/* STATE */
-
-.state {
-    margin-left: 3px;
-
-    background: #202832;
-
-    color: #cbd5df;
-}
-
-.state-long {
-    background: rgba(73,220,135,.13);
-
-    color: #55df8e;
-}
-
-.state-short {
-    background: rgba(255,116,116,.13);
-
-    color: #ff7777;
-}
-
-/* ============================= */
-/* ANALYSIS TEXT */
-/* ============================= */
 
 .section {
+
     margin-top: 8px;
+
 }
+
 
 .section:first-child {
+
     margin-top: 0;
+
 }
+
 
 .label {
-    font-weight: 750;
 
     color: #d9e2eb;
+
+    font-weight: 750;
+
 }
 
+
 .watch {
+
     margin-top: 11px;
 
     padding-top: 11px;
 
-    border-top: 1px solid #252d36;
+    border-top:
+
+        1px solid
+        #252d36;
+
 }
 
-/* ============================= */
-/* EMPTY */
-/* ============================= */
+
+/* ===================================================== */
+/* STATUS */
+/* ===================================================== */
+
 
 .empty {
-    text-align: center;
 
     margin-top: 100px;
 
+    text-align: center;
+
     color: #71808e;
+
 }
 
-/* ============================= */
-/* STATUS */
-/* ============================= */
 
 .footer-status {
+
     position: fixed;
 
     bottom: 15px;
 
     left: 50%;
 
-    transform: translateX(-50%);
+    transform:
+        translateX(-50%);
 
-    padding: 7px 13px;
+    padding:
+
+        7px
+        13px;
 
     background: #151b21;
 
-    border: 1px solid #29323c;
+    border:
+
+        1px solid
+        #29323c;
 
     border-radius: 999px;
 
@@ -812,40 +1153,91 @@ body {
 
     font-size: 11px;
 
-    box-shadow: 0 5px 20px rgba(0,0,0,.35);
 }
 
-/* ============================= */
+
+/* ===================================================== */
 /* MOBILE */
-/* ============================= */
+/* ===================================================== */
+
 
 @media(max-width:800px) {
 
     .header {
-        padding: 14px;
+
+        padding: 13px;
+
     }
+
 
     .header-top {
+
         flex-wrap: wrap;
+
     }
+
+
+    .title-area {
+
+        flex: 1;
+
+        min-width: 170px;
+
+    }
+
+
+    .title {
+
+        font-size: 20px;
+
+    }
+
 
     .account-box {
+
+        order: 3;
+
         width: 100%;
+
         margin-left: 0;
 
-        justify-content: space-between;
+        justify-content:
+            space-between;
+
+        gap: 8px;
+
     }
+
+
+    .account-row {
+
+        min-width: 80px;
+
+    }
+
+
+    .account-value {
+
+        font-size: 14px;
+
+    }
+
 
     .feed {
-        padding: 18px 12px 70px;
+
+        padding:
+
+            17px
+            11px
+            70px;
+
     }
+
 
     .bubble {
-        font-size: 13px;
-    }
 
-    .subtitle {
-        font-size: 12px;
+        font-size: 13px;
+
     }
 
 }
@@ -854,214 +1246,341 @@ body {
 
 </head>
 
+
 <body>
+
 
 <div class="app">
 
+
 <header class="header">
+
 
 <div class="header-top">
 
+
 <div class="title-area">
 
+
 <div class="title">
-MNQ Live Copilot
+
+NQ Edge Monitor
+
 </div>
+
 
 <div class="subtitle">
-Range / Volume Profile / VWAP · 5M · 17:30–22:00 UK
-</div>
+
+Range / VP / VWAP · 5M · 17:30–22:00 UK
 
 </div>
+
+
+</div>
+
 
 
 <div class="account-box">
 
+
 <div class="account-row">
 
 <span class="account-label">
+
 BALANCE
+
 </span>
 
-<span id="balanceValue" class="account-value">
-£0.00
+<span
+    id="balanceValue"
+    class="account-value"
+>
+
+$0.00
+
 </span>
 
 </div>
+
 
 
 <div class="account-row">
 
 <span class="account-label">
+
 TODAY PNL
+
 </span>
 
-<span id="pnlValue" class="account-value pnl-zero">
-£0.00
+<span
+    id="pnlValue"
+    class="account-value pnl-zero"
+>
+
+$0.00
+
 </span>
 
 </div>
+
 
 
 <button
-class="account-edit"
-onclick="editAccount()"
+    class="edit-button"
+    onclick="editAccount()"
 >
+
 Edit
+
 </button>
 
+
 </div>
+
 
 
 <div class="live">
 
-<span class="dot"></span>
+<span class="live-dot"></span>
 
 LIVE
 
 </div>
 
+
 </div>
+
 
 </header>
 
 
-<main id="feed" class="feed">
+
+<main
+    id="feed"
+    class="feed"
+>
+
 
 <div class="empty">
+
 Oczekiwanie na analizę...
+
 </div>
+
 
 </main>
 
+
 </div>
 
 
-<div id="status" class="footer-status">
+
+<div
+    id="status"
+    class="footer-status"
+>
+
 Łączenie...
+
 </div>
+
 
 
 <script>
 
-const key = __SAFE_KEY__;
 
-let lastIds = new Set();
-
-let previousScore = null;
-
-let firstLoad = true;
+const key =
+    __SAFE_KEY__;
 
 
-/* ================================= */
-/* SECURITY */
-/* ================================= */
+/*
+Tu możesz zmienić walutę.
+Dla kont futures domyślnie dałem USD.
+*/
+
+const currencySymbol =
+    "$";
+
+
+let lastIds =
+    new Set();
+
+
+let previousScore =
+    null;
+
+
+let firstLoad =
+    true;
+
+
+/* ===================================================== */
+/* ESCAPE */
+/* ===================================================== */
+
 
 function esc(value) {
 
-    return String(value ?? "")
+    return String(
+        value ?? ""
+    )
 
-        .replaceAll("&", "&amp;")
+    .replaceAll(
+        "&",
+        "&amp;"
+    )
 
-        .replaceAll("<", "&lt;")
+    .replaceAll(
+        "<",
+        "&lt;"
+    )
 
-        .replaceAll(">", "&gt;")
+    .replaceAll(
+        ">",
+        "&gt;"
+    )
 
-        .replaceAll('"', "&quot;");
-
-}
-
-
-/* ================================= */
-/* UK TIME */
-/* ================================= */
-
-function ukTime(raw) {
-
-    if (!raw)
-        return "";
-
-    try {
-
-        const date = new Date(raw);
-
-        return new Intl.DateTimeFormat(
-
-            "en-GB",
-
-            {
-
-                timeZone: "Europe/London",
-
-                hour: "2-digit",
-
-                minute: "2-digit",
-
-                hour12: false
-
-            }
-
-        ).format(date) + " UK";
-
-    }
-
-    catch(e) {
-
-        return raw;
-
-    }
-
-}
-
-
-/* ================================= */
-/* ACCOUNT */
-/* ================================= */
-
-function loadAccount() {
-
-    const balance =
-        localStorage.getItem("mnq_balance") || "0";
-
-    const pnl =
-        localStorage.getItem("mnq_pnl") || "0";
-
-    updateAccountDisplay(
-        balance,
-        pnl
+    .replaceAll(
+        '"',
+        "&quot;"
     );
 
 }
 
 
-function updateAccountDisplay(balance, pnl) {
-
-    const balanceEl =
-        document.getElementById("balanceValue");
-
-    const pnlEl =
-        document.getElementById("pnlValue");
+/* ===================================================== */
+/* MONEY */
+/* ===================================================== */
 
 
-    let balanceNum =
+function money(value) {
+
+    const number =
+        Number(value);
+
+
+    if (!Number.isFinite(number))
+
+        return currencySymbol + "0.00";
+
+
+    return currencySymbol +
+
+        Math.abs(number)
+
+        .toLocaleString(
+
+            "en-GB",
+
+            {
+
+                minimumFractionDigits: 2,
+
+                maximumFractionDigits: 2
+
+            }
+
+        );
+
+}
+
+
+/* ===================================================== */
+/* ACCOUNT LOAD */
+/* ===================================================== */
+
+
+async function loadAccount() {
+
+    try {
+
+        const response =
+
+            await fetch(
+
+                `/account/${encodeURIComponent(key)}`,
+
+                {
+                    cache: "no-store"
+                }
+
+            );
+
+
+        if (!response.ok)
+
+            throw new Error(
+                "Account HTTP " +
+                response.status
+            );
+
+
+        const data =
+            await response.json();
+
+
+        updateAccountDisplay(
+
+            data.balance,
+
+            data.pnl
+
+        );
+
+    }
+
+    catch(error) {
+
+        console.error(
+            "Account:",
+            error
+        );
+
+    }
+
+}
+
+
+/* ===================================================== */
+/* ACCOUNT DISPLAY */
+/* ===================================================== */
+
+
+function updateAccountDisplay(
+    balance,
+    pnl
+) {
+
+    const balanceElement =
+
+        document.getElementById(
+            "balanceValue"
+        );
+
+
+    const pnlElement =
+
+        document.getElementById(
+            "pnlValue"
+        );
+
+
+    const balanceNumber =
         Number(balance);
 
-    let pnlNum =
+
+    const pnlNumber =
         Number(pnl);
 
 
-    if (!Number.isFinite(balanceNum))
-        balanceNum = 0;
+    balanceElement.textContent =
 
-    if (!Number.isFinite(pnlNum))
-        pnlNum = 0;
-
-
-    balanceEl.textContent =
-        "£" + balanceNum.toFixed(2);
+        money(
+            balanceNumber
+        );
 
 
-    pnlEl.classList.remove(
+    pnlElement.classList.remove(
 
         "pnl-positive",
 
@@ -1072,153 +1591,328 @@ function updateAccountDisplay(balance, pnl) {
     );
 
 
-    if (pnlNum > 0) {
+    if (pnlNumber > 0) {
 
-        pnlEl.classList.add(
+        pnlElement.classList.add(
             "pnl-positive"
         );
 
-        pnlEl.textContent =
-            "+£" + pnlNum.toFixed(2);
+
+        pnlElement.textContent =
+
+            "+" +
+            money(pnlNumber);
 
     }
 
-    else if (pnlNum < 0) {
 
-        pnlEl.classList.add(
+    else if (pnlNumber < 0) {
+
+        pnlElement.classList.add(
             "pnl-negative"
         );
 
-        pnlEl.textContent =
-            "-£" + Math.abs(pnlNum).toFixed(2);
+
+        pnlElement.textContent =
+
+            "-" +
+            money(pnlNumber);
 
     }
 
+
     else {
 
-        pnlEl.classList.add(
+        pnlElement.classList.add(
             "pnl-zero"
         );
 
-        pnlEl.textContent =
-            "£0.00";
+
+        pnlElement.textContent =
+
+            money(0);
 
     }
 
 }
 
 
-function editAccount() {
-
-    const currentBalance =
-        localStorage.getItem("mnq_balance") || "0";
-
-    const currentPnl =
-        localStorage.getItem("mnq_pnl") || "0";
+/* ===================================================== */
+/* EDIT ACCOUNT */
+/* ===================================================== */
 
 
-    const balance = prompt(
+async function editAccount() {
 
-        "Podaj aktualne saldo:",
+    let currentBalance =
+        document
+        .getElementById(
+            "balanceValue"
+        )
+        .textContent;
+
+
+    let currentPnl =
+        document
+        .getElementById(
+            "pnlValue"
+        )
+        .textContent;
+
+
+    currentBalance =
+
+        currentBalance
+
+        .replaceAll(
+            currencySymbol,
+            ""
+        )
+
+        .replaceAll(
+            ",",
+            ""
+        );
+
+
+    currentPnl =
+
+        currentPnl
+
+        .replaceAll(
+            currencySymbol,
+            ""
+        )
+
+        .replaceAll(
+            ",",
+            ""
+        )
+
+        .replace(
+            "+",
+            ""
+        );
+
+
+    const balanceInput = prompt(
+
+        "Aktualne saldo:",
 
         currentBalance
 
     );
 
 
-    if (balance === null)
+    if (balanceInput === null)
+
         return;
 
 
-    const pnl = prompt(
+    const pnlInput = prompt(
 
-        "Podaj dzisiejszy PnL:",
+        "Dzisiejszy PnL (np. 250 albo -175):",
 
         currentPnl
 
     );
 
 
-    if (pnl === null)
+    if (pnlInput === null)
+
         return;
 
 
-    const balanceNumber =
+    const balance =
+
         Number(
-            String(balance)
-                .replace(",", ".")
+
+            String(balanceInput)
+
+            .replaceAll(
+                ",",
+                ""
+            )
+
         );
 
 
-    const pnlNumber =
+    const pnl =
+
         Number(
-            String(pnl)
-                .replace(",", ".")
+
+            String(pnlInput)
+
+            .replaceAll(
+                ",",
+                ""
+            )
+
         );
 
 
-    if (!Number.isFinite(balanceNumber)) {
+    if (
+        !Number.isFinite(balance) ||
+        !Number.isFinite(pnl)
+    ) {
 
-        alert("Nieprawidłowe saldo.");
+        alert(
+            "Nieprawidłowa wartość."
+        );
 
         return;
 
     }
 
 
-    if (!Number.isFinite(pnlNumber)) {
+    try {
 
-        alert("Nieprawidłowy PnL.");
+        const response =
 
-        return;
+            await fetch(
+
+                `/account/${encodeURIComponent(key)}`,
+
+                {
+
+                    method: "POST",
+
+                    headers: {
+
+                        "Content-Type":
+                            "application/json"
+
+                    },
+
+                    body:
+                        JSON.stringify(
+                            {
+                                balance,
+                                pnl
+                            }
+                        )
+
+                }
+
+            );
+
+
+        if (!response.ok) {
+
+            const message =
+                await response.text();
+
+
+            throw new Error(
+                message
+            );
+
+        }
+
+
+        await loadAccount();
+
 
     }
 
+    catch(error) {
 
-    localStorage.setItem(
-
-        "mnq_balance",
-
-        String(balanceNumber)
-
-    );
+        console.error(
+            error
+        );
 
 
-    localStorage.setItem(
+        alert(
+            "Nie udało się zapisać Balance/PnL."
+        );
 
-        "mnq_pnl",
-
-        String(pnlNumber)
-
-    );
-
-
-    loadAccount();
+    }
 
 }
 
 
-/* ================================= */
-/* ANALYSIS PARSER */
-/* ================================= */
+/* ===================================================== */
+/* UK TIME */
+/* ===================================================== */
+
+
+function ukTime(raw) {
+
+    if (!raw)
+
+        return "";
+
+
+    try {
+
+        const date =
+            new Date(raw);
+
+
+        return new Intl.DateTimeFormat(
+
+            "en-GB",
+
+            {
+
+                timeZone:
+                    "Europe/London",
+
+                hour:
+                    "2-digit",
+
+                minute:
+                    "2-digit",
+
+                hour12:
+                    false
+
+            }
+
+        ).format(date)
+        +
+        " UK";
+
+    }
+
+
+    catch(error) {
+
+        return raw;
+
+    }
+
+}
+
+
+/* ===================================================== */
+/* REACTION PARSER */
+/* ===================================================== */
+
 
 function parseReaction(text) {
 
     text =
-        String(text || "");
+        String(
+            text || ""
+        );
 
 
     let environment =
         "NEUTRAL";
 
 
-    if (/LONG ENV/i.test(text))
+    if (
+        /LONG ENV/i.test(text)
+    )
 
         environment =
             "LONG ENV";
 
 
-    else if (/SHORT ENV/i.test(text))
+    else if (
+        /SHORT ENV/i.test(text)
+    )
 
         environment =
             "SHORT ENV";
@@ -1237,9 +1931,15 @@ function parseReaction(text) {
 
         scoreMatch
 
-        ? Number(scoreMatch[1])
+        ?
 
-        : null;
+        Number(
+            scoreMatch[1]
+        )
+
+        :
+
+        null;
 
 
     const stateMatch =
@@ -1255,9 +1955,13 @@ function parseReaction(text) {
 
         stateMatch
 
-        ? stateMatch[1].trim()
+        ?
 
-        : "";
+        stateMatch[1].trim()
+
+        :
+
+        "";
 
 
     return {
@@ -1273,21 +1977,32 @@ function parseReaction(text) {
 }
 
 
-/* ================================= */
-/* FORMAT ANALYSIS */
-/* ================================= */
+/* ===================================================== */
+/* FORMAT REACTION */
+/* ===================================================== */
+
 
 function formatReaction(text) {
 
     let lines =
-        String(text || "").split("\\n");
+
+        String(
+            text || ""
+        )
+
+        .split(
+            "\\n"
+        );
 
 
     if (
 
-        lines.length &&
+        lines.length
 
-        /^\\s*\\[.*UK\\].*(LONG ENV|SHORT ENV|NEUTRAL)/i.test(
+        &&
+
+        /^\\s*\\[.*UK\\].*(LONG ENV|SHORT ENV|NEUTRAL)/i
+        .test(
             lines[0]
         )
 
@@ -1298,128 +2013,165 @@ function formatReaction(text) {
     }
 
 
-    return lines.map(line => {
+    return lines
 
-        const safe =
-            esc(line);
+    .map(
+        line => {
 
-
-        if (/^Zmiana 5M:/i.test(line))
-
-            return `
-
-            <div class="section">
-
-            <span class="label">
-            Zmiana 5M:
-            </span>
-
-            ${safe.substring(
-                safe.indexOf(":") + 1
-            )}
-
-            </div>
-
-            `;
+            const safe =
+                esc(line);
 
 
-        if (/^Range:/i.test(line))
+            if (
+                /^Zmiana 5M:/i.test(line)
+            )
 
-            return `
+                return `
 
-            <div class="section">
+                <div class="section">
 
-            <span class="label">
-            Range:
-            </span>
+                <span class="label">
+                Zmiana 5M:
+                </span>
 
-            ${safe.substring(
-                safe.indexOf(":") + 1
-            )}
+                ${safe.substring(
+                    safe.indexOf(":") + 1
+                )}
 
-            </div>
+                </div>
 
-            `;
-
-
-        if (/^VP:/i.test(line))
-
-            return `
-
-            <div class="section">
-
-            <span class="label">
-            VP:
-            </span>
-
-            ${safe.substring(
-                safe.indexOf(":") + 1
-            )}
-
-            </div>
-
-            `;
+                `;
 
 
-        if (/^VWAP:/i.test(line))
+            if (
+                /^Range:/i.test(line)
+            )
 
-            return `
+                return `
 
-            <div class="section">
+                <div class="section">
 
-            <span class="label">
-            VWAP:
-            </span>
+                <span class="label">
+                Range:
+                </span>
 
-            ${safe.substring(
-                safe.indexOf(":") + 1
-            )}
+                ${safe.substring(
+                    safe.indexOf(":") + 1
+                )}
 
-            </div>
+                </div>
 
-            `;
-
-
-        if (/^Konfluencja:/i.test(line))
-
-            return `
-
-            <div class="section">
-
-            <span class="label">
-            Konfluencja:
-            </span>
-
-            ${safe.substring(
-                safe.indexOf(":") + 1
-            )}
-
-            </div>
-
-            `;
+                `;
 
 
-        if (/^Teraz obserwuj:/i.test(line))
+            if (
+                /^VP:/i.test(line)
+            )
 
-            return `
+                return `
 
-            <div class="section watch">
+                <div class="section">
 
-            <span class="label">
-            Teraz obserwuj:
-            </span>
+                <span class="label">
+                VP:
+                </span>
 
-            </div>
+                ${safe.substring(
+                    safe.indexOf(":") + 1
+                )}
 
-            `;
+                </div>
+
+                `;
 
 
-        if (/^Stan:/i.test(line))
+            if (
+                /^VWAP:/i.test(line)
+            )
 
-            return "";
+                return `
+
+                <div class="section">
+
+                <span class="label">
+                VWAP:
+                </span>
+
+                ${safe.substring(
+                    safe.indexOf(":") + 1
+                )}
+
+                </div>
+
+                `;
 
 
-        if (/^\\s*[-•]/.test(line))
+            if (
+                /^Konfluencja:/i.test(line)
+            )
+
+                return `
+
+                <div class="section">
+
+                <span class="label">
+                Konfluencja:
+                </span>
+
+                ${safe.substring(
+                    safe.indexOf(":") + 1
+                )}
+
+                </div>
+
+                `;
+
+
+            if (
+                /^Teraz obserwuj:/i.test(line)
+            )
+
+                return `
+
+                <div class="section watch">
+
+                <span class="label">
+                Teraz obserwuj:
+                </span>
+
+                </div>
+
+                `;
+
+
+            if (
+                /^Stan:/i.test(line)
+            )
+
+                return "";
+
+
+            if (
+                /^\\s*[-•]/.test(line)
+            )
+
+                return `
+
+                <div class="section">
+
+                ${safe}
+
+                </div>
+
+                `;
+
+
+            if (
+                !line.trim()
+            )
+
+                return "";
+
 
             return `
 
@@ -1431,41 +2183,34 @@ function formatReaction(text) {
 
             `;
 
+        }
 
-        if (!line.trim())
+    )
 
-            return "";
-
-
-        return `
-
-        <div class="section">
-
-        ${safe}
-
-        </div>
-
-        `;
-
-    }).join("");
+    .join("");
 
 }
 
 
-/* ================================= */
+/* ===================================================== */
 /* CREATE MESSAGE */
-/* ================================= */
+/* ===================================================== */
+
 
 function createMessage(item) {
 
     const parsed =
+
         parseReaction(
             item.reaction
         );
 
 
     const wrapper =
-        document.createElement("div");
+
+        document.createElement(
+            "div"
+        );
 
 
     wrapper.className =
@@ -1488,6 +2233,7 @@ function createMessage(item) {
         envClass =
             "long";
 
+
         envBadge =
             "env-long";
 
@@ -1501,6 +2247,7 @@ function createMessage(item) {
 
         envClass =
             "short";
+
 
         envBadge =
             "env-short";
@@ -1519,7 +2266,9 @@ function createMessage(item) {
 
     if (
 
-        parsed.score !== null &&
+        parsed.score !== null
+
+        &&
 
         previousScore !== null
 
@@ -1531,7 +2280,9 @@ function createMessage(item) {
             previousScore;
 
 
-        if (delta > 0) {
+        if (
+            delta > 0
+        ) {
 
             deltaHTML =
 
@@ -1542,7 +2293,9 @@ function createMessage(item) {
         }
 
 
-        else if (delta < 0) {
+        else if (
+            delta < 0
+        ) {
 
             deltaHTML =
 
@@ -1566,7 +2319,9 @@ function createMessage(item) {
     }
 
 
-    if (parsed.score !== null)
+    if (
+        parsed.score !== null
+    )
 
         previousScore =
             parsed.score;
@@ -1598,62 +2353,69 @@ function createMessage(item) {
 
     wrapper.innerHTML = `
 
+
     <div class="meta">
 
-        <span class="time">
 
-        ${esc(
-            ukTime(
-                item.market_time_uk
-            )
-        )}
+    <span class="time">
 
-        </span>
+    ${esc(
+        ukTime(
+            item.market_time_uk
+        )
+    )}
 
-
-        <span class="badge ${envBadge}">
-
-        ${esc(
-            parsed.environment
-        )}
-
-        </span>
+    </span>
 
 
-        ${
-            parsed.state
+    <span class="badge ${envBadge}">
 
-            ?
+    ${esc(
+        parsed.environment
+    )}
 
-            `<span class="badge ${stateClass}">
-            ${esc(parsed.state)}
-            </span>`
-
-            :
-
-            ""
-        }
+    </span>
 
 
-        <span class="score">
+    ${
+        parsed.state
 
-        ${
-            parsed.score !== null
+        ?
 
-            ?
+        `<span class="badge ${stateClass}">
+        ${esc(parsed.state)}
+        </span>`
 
-            `${parsed.score}/10`
+        :
 
-            :
+        ""
+    }
 
-            ""
-        }
 
-        ${deltaHTML}
+    <span class="score">
 
-        </span>
+
+    ${
+        parsed.score !== null
+
+        ?
+
+        `${parsed.score}/10`
+
+        :
+
+        ""
+    }
+
+
+    ${deltaHTML}
+
+
+    </span>
+
 
     </div>
+
 
 
     <div class="bubble">
@@ -1664,6 +2426,7 @@ function createMessage(item) {
 
     </div>
 
+
     `;
 
 
@@ -1672,9 +2435,10 @@ function createMessage(item) {
 }
 
 
-/* ================================= */
-/* LOAD FEED */
-/* ================================= */
+/* ===================================================== */
+/* FEED */
+/* ===================================================== */
+
 
 async function loadFeed() {
 
@@ -1694,17 +2458,24 @@ async function loadFeed() {
                 `/feed/${encodeURIComponent(key)}?limit=40`,
 
                 {
-                    cache: "no-store"
+
+                    cache:
+                        "no-store"
+
                 }
 
             );
 
 
-        if (!response.ok)
+        if (
+            !response.ok
+        )
 
             throw new Error(
+
                 "HTTP " +
                 response.status
+
             );
 
 
@@ -1725,13 +2496,17 @@ async function loadFeed() {
             data.items || [];
 
 
-        if (firstLoad) {
+        if (
+            firstLoad
+        ) {
 
             feed.innerHTML =
                 "";
 
 
-            if (!items.length) {
+            if (
+                !items.length
+            ) {
 
                 feed.innerHTML = `
 
@@ -1748,82 +2523,93 @@ async function loadFeed() {
         }
 
 
-        items.forEach(item => {
+        items.forEach(
+            item => {
 
-            const id =
+                const id =
 
-                String(
+                    String(
 
-                    item.id ||
+                        item.id
 
-                    item.snapshot_id ||
+                        ||
 
-                    item.market_time_uk
+                        item.snapshot_id
 
-                );
+                        ||
 
+                        item.market_time_uk
 
-            if (
-                lastIds.has(id)
-            )
-
-                return;
+                    );
 
 
-            if (
-                feed.querySelector(
-                    ".empty"
+                if (
+                    lastIds.has(id)
                 )
-            ) {
 
-                feed.innerHTML =
-                    "";
+                    return;
+
+
+                if (
+                    feed.querySelector(
+                        ".empty"
+                    )
+                ) {
+
+                    feed.innerHTML =
+                        "";
+
+                }
+
+
+                lastIds.add(id);
+
+
+                const message =
+
+                    createMessage(
+                        item
+                    );
+
+
+                /*
+                NAJNOWSZA ANALIZA
+                NA GÓRZE
+                */
+
+                feed.prepend(
+                    message
+                );
 
             }
 
-
-            lastIds.add(id);
-
-
-            const message =
-
-                createMessage(
-                    item
-                );
-
-
-            /*
-            NOWA ANALIZA
-            TRAFIA NA GÓRĘ
-            */
-
-            feed.prepend(
-                message
-            );
-
-        });
+        );
 
 
         status.textContent =
 
-            "LIVE · odświeżono " +
+            "LIVE · " +
 
             new Date()
-                .toLocaleTimeString(
 
-                    "en-GB",
+            .toLocaleTimeString(
 
-                    {
+                "en-GB",
 
-                        hour: "2-digit",
+                {
 
-                        minute: "2-digit",
+                    hour:
+                        "2-digit",
 
-                        second: "2-digit"
+                    minute:
+                        "2-digit",
 
-                    }
+                    second:
+                        "2-digit"
 
-                );
+                }
+
+            );
 
 
         firstLoad =
@@ -1848,20 +2634,33 @@ async function loadFeed() {
 }
 
 
-/* ================================= */
+/* ===================================================== */
 /* START */
-/* ================================= */
+/* ===================================================== */
+
 
 loadAccount();
 
 loadFeed();
 
+
 setInterval(
-    loadFeed,
+
+    () => {
+
+        loadAccount();
+
+        loadFeed();
+
+    },
+
     5000
+
 );
 
+
 </script>
+
 
 </body>
 
