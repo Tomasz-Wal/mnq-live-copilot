@@ -1264,7 +1264,7 @@ body {
 
 <div class="title">
 
-NQ Edge Monitor
+MNQ Ai by Tomasz
 
 </div>
 
