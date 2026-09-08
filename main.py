@@ -434,7 +434,7 @@ def dashboard(key: str) -> str:
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 
-<title>MNQ Live Copilot</title>
+<title>MNQ Ai Live Update by Tomasz</title>
 
 <style>
 
